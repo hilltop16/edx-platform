@@ -18,6 +18,14 @@ from openedx.features.enterprise_support.api import insert_enterprise_pipeline_e
 def apply_settings(django_settings):
     """Set provider-independent settings."""
 
+    # Auth0 settings
+    # DOMAIN is used by get_path method. environment dependent
+    django_settings.DOMAIN = "guid-sandbox.us.auth0.com"
+    # Auth0 API identifier
+    django_settings.AUDIENCE = 'https://guid-sandbox.us.auth0.com/api/v2/'
+    # Auth0 web app ID which is passed to jwt_decode_token method as audience
+    django_settings.KEY = 'mwQoWn1elBgRshMfhDpjZiLWbWTuEf7g'
+
     # Whitelisted URL query parameters retrained in the pipeline session.
     # Params not in this whitelist will be silently dropped.
     django_settings.FIELDS_STORED_IN_SESSION = ['auth_entry', 'next']
