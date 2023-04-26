@@ -1,6 +1,8 @@
 """
 Auth0 implementation based on social-core library:
 https://github.com/python-social-auth/social-core/blob/master/social_core/backends/auth0.py
+Auth0 authorization flow is used here
+https://auth0.com/docs/get-started/authentication-and-authorization-flow/which-oauth-2-0-flow-should-i-use#is-the-client-a-web-app-executing-on-the-server-
 """
 import json
 import jwt
@@ -10,12 +12,15 @@ from urllib.parse import urlparse, urlencode
 from social_core.backends.auth0 import Auth0OAuth2
 
 class Auth0Backend(Auth0OAuth2):
-    
-    JWK_URL = 'https://2u-guid-staging.us.auth0.com/.well-known/jwks.json'
+    # Scope is a required parameter for Auth0 /oauth2/authorize endpoint
+    # There is no value in the DEFAULT_SCOPE in Auth0OAuth2 class, we need extend from it to add scopes
+    # At least openid has to be in the scope otherwise won't be able to retrieve id_token/access_token
+    # We probably don't need this custom Auth0 backend if there are other ways to customize DEFAULT_SCOPE 
     DEFAULT_SCOPE = ["openid", "email", "profile"]
     
     def jwt_decode_token(self, token):
       header = jwt.get_unverified_header(token)
+      # Get settings from third_party_auth module settings
       domain = self.setting('DOMAIN')
       jwks = requests.get('https://{}/.well-known/jwks.json'.format(domain)).json()
       public_key = None
@@ -27,6 +32,7 @@ class Auth0Backend(Auth0OAuth2):
           raise Exception('Public key not found.')
 
       issuer = 'https://{}/'.format(domain)
+      # The audience is same as the client's key because both the client and the authorizing party are the app itself
       return jwt.decode(token, public_key, audience=self.setting('KEY'), issuer=issuer, algorithms=['RS256'])
 
 
@@ -45,10 +51,4 @@ class Auth0Backend(Auth0OAuth2):
             "picture": payload["picture"],
             "user_id": payload["sub"],
         }
-    
-    def auth_url(self):
-      """Return redirect url"""
-      param = {'audience': self.setting('AUDIENCE')}
-      url = super().auth_url()
-      url += ('&' if urlparse(url).query else '?') + urlencode(param)
-      return url
+

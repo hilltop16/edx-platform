@@ -19,12 +19,13 @@ def apply_settings(django_settings):
     """Set provider-independent settings."""
 
     # Auth0 settings
-    # DOMAIN is used by get_path method. environment dependent
-    django_settings.DOMAIN = "guid-sandbox.us.auth0.com"
-    # Auth0 API identifier
-    django_settings.AUDIENCE = 'https://guid-sandbox.us.auth0.com/api/v2/'
+    # TODO
+    # remove hardcoded configs
+
+    # DOMAIN is used by get_path method
+    django_settings.DOMAIN = "REPLACE WITH AUTH0 CLIENT DOMAIN"
     # Auth0 web app ID which is passed to jwt_decode_token method as audience
-    django_settings.KEY = 'mwQoWn1elBgRshMfhDpjZiLWbWTuEf7g'
+    django_settings.KEY = 'REPLACE WITH AUTH0 CLIENT SECRET'
 
     # Whitelisted URL query parameters retrained in the pipeline session.
     # Params not in this whitelist will be silently dropped.
