@@ -1,22 +1,28 @@
-from django.test import TestCase, Client
+import json
+from django.test import TestCase
 from django.conf import settings
-from common.djangoapps.util.json_request import JsonResponse
-from unittest.mock import patch
+from django.urls import reverse
+from unittest import mock
 
 class getPublicSigningJWKSFunctionTest(TestCase):
-    def setUp(self):
-        self.client = Client()
+    def _get_jwks(self, accepts='application/json'):
+        """ Get JWKS from the endpoint """
+        url = reverse('get_public_signing_jwks')
 
-    @patch('common.djangoapps.util.json_request.JsonResponse')
-    def test_get_public_signing_jwks_with_no_jwk_set(self, mock_json_response):
-        settings.JWT_AUTH = {}  
-        response = self.client.get('/auth/jwks.json')  
-        self.assertEqual(mock_json_response.call_args[0][0], {'error': 'JWK set is not found'})
-        self.assertEqual(mock_json_response.call_args[1]['status'], 400)
+        return self.client.get(url, HTTP_ACCEPT=accepts)
 
-    @patch('common.djangoapps.util.json_request.JsonResponse')
-    def test_get_public_signing_jwks_with_jwk_set(self, mock_json_response):
-        settings.JWT_AUTH = {'JWT_PUBLIC_SIGNING_JWK_SET': {'mocked-jwks': 'jwks'}}  
-        response = self.client.get('/auth/jwks.json')
-        self.assertEqual(mock_json_response.call_args[0][0], {'mocked-jwks': 'jwks'})
-        self.assertEqual(mock_json_response.call_args[1]['status'], 200)
+    @mock.patch.dict(settings.JWT_AUTH, {'JWT_PUBLIC_SIGNING_JWK_SET': None})
+    def test_get_public_signing_jwks_with_no_jwk_set(self):
+        """ Test JWT_PUBLIC_SIGNING_JWK_SET is undefined """
+        resp = self._get_jwks()
+        content = json.loads(resp.content)
+        assert resp.status_code == 400
+        assert 'JWK set is not found' in content['error']
+    
+    @mock.patch.dict(settings.JWT_AUTH, {'JWT_PUBLIC_SIGNING_JWK_SET': {'jwks': 'mocked-jwks'}})
+    def test_get_public_signing_jwks_with_jwk_set(self):
+        """ Test JWT_PUBLIC_SIGNING_JWK_SET is defined """
+        resp = self._get_jwks()
+        content = json.loads(resp.content)
+        assert resp.status_code == 200
+        assert 'mocked-jwks' in content['jwks']
