@@ -1,6 +1,7 @@
 from common.djangoapps.util.json_request import JsonResponse
 from django.conf import settings
 
+
 """
 View to provide the auth related public signing JWK set as json.
 """
