@@ -2,9 +2,11 @@ import json
 from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from unittest import mock
 
 
+@skip_unless_lms
 class getPublicSigningJWKSFunctionTest(TestCase):
     def _get_jwks(self, accepts='application/json'):
         """ Get JWKS from the endpoint """
