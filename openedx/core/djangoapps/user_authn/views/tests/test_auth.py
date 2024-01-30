@@ -1,3 +1,6 @@
+""" Tests for auth. """
+
+
 import json
 from django.test import TestCase
 from django.conf import settings
@@ -8,6 +11,9 @@ from unittest import mock
 
 @skip_unless_lms
 class getPublicSigningJWKSFunctionTest(TestCase):
+    """
+    Tests for the auth view.
+    """
     def _get_jwks(self, accepts='application/json'):
         """ Get JWKS from the endpoint """
         url = reverse('get_public_signing_jwks')
