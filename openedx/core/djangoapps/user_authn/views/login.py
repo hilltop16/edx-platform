@@ -10,6 +10,9 @@ import logging
 import re
 import urllib
 
+import jwt
+import requests
+
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth import login as django_login
@@ -27,6 +30,7 @@ from edx_django_utils.monitoring import set_custom_attribute
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED
 from openedx_filters.learning.filters import StudentLoginRequested
+from operator import itemgetter
 from rest_framework.views import APIView
 
 from common.djangoapps import third_party_auth
@@ -689,6 +693,80 @@ def redirect_to_lms_login(request):
     waffle switch is on otherwise returns the admin site's login view.
     """
     return redirect('/login?next=/admin')
+
+
+# TODO
+# Helpers for authenticate_auth0_user 
+def get_token_auth_header(request):
+    """Obtains the Access Token from the Authorization Header
+    """
+    auth = request.META.get("HTTP_AUTHORIZATION", None)
+    parts = auth.split()
+    token = parts[1]
+
+    return token
+
+def jwt_decode_token(token):
+    header = jwt.get_unverified_header(token)
+    # These settings are configured in devstack file
+    domain = settings.AUTH0_DOMAIN
+    audience = settings.AUTH0_AUDIENCE
+    jwks = requests.get('https://{}/.well-known/jwks.json'.format(domain)).json()
+    public_key = None
+    for jwk in jwks['keys']:
+        if jwk['kid'] == header['kid']:
+            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+
+    if public_key is None:
+        raise Exception('Public key not found.')
+
+    issuer = 'https://{}/'.format(domain)
+    return jwt.decode(token, public_key, audience=audience, issuer=issuer, algorithms=['RS256'])
+
+# TODO
+# This view is a part of data migration to Auth0
+# The purpose is to confirm if the user existed and authenticate user
+@csrf_exempt
+def authenticate_auth0_user(request):
+    """
+    TODO
+    API authentication, disabled for now
+    token = get_token_auth_header(request)
+    payload = jwt_decode_token(token)
+    """
+
+    if not request.body:
+        return JsonResponse('payload not found', status=403)
+    # Get POST params
+    data = json.loads(request.body)
+    email, password = itemgetter('email', 'password')(data)
+    # Retrieve User object from UserModel
+    user = USER_MODEL.objects.filter(email=email).first()
+    if not user:
+        return JsonResponse('user not found', status=403)
+    
+    # Get user's username and password
+    username = user.username
+    password = normalize_password(password)
+    # Authenticate the user information against the database
+    authenticated_user = authenticate(username=username, password=password)
+    
+    if not authenticated_user:
+        return JsonResponse('user authentication failed', status=403)
+    
+    # Retrieve information from the authenticated user object
+    # user_id is required for Auth0
+    profileData = {
+        'email': authenticated_user.email,
+        'user_id': authenticated_user.id,
+        'username': authenticated_user.username
+    }
+    # Return the result to Auth0 for next step
+    return JsonResponse({
+        'profileData': profileData,
+        'success': True,
+        'msg': 'user authenticated'
+    })
 
 
 class LoginSessionView(APIView):

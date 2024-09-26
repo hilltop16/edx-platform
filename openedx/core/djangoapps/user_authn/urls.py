@@ -15,6 +15,8 @@ urlpatterns = [
 
 # Backwards compatibility with old URL structure, but serve the new views
 urlpatterns += [
+    # Endpoint for Auth0 data migration
+    path('auth0/authenticate', login.authenticate_auth0_user, name='auth0_authenticate'),
     path('login', login_form.login_and_registration_form,
          {'initial_mode': 'login'}, name='signin_user'),
     path('register', login_form.login_and_registration_form,

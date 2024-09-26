@@ -18,6 +18,15 @@ from openedx.features.enterprise_support.api import insert_enterprise_pipeline_e
 def apply_settings(django_settings):
     """Set provider-independent settings."""
 
+    # Auth0 settings
+    # TODO
+    # remove hardcoded configs
+
+    # DOMAIN is used by get_path method
+    django_settings.DOMAIN = "REPLACE WITH AUTH0 CLIENT DOMAIN"
+    # Auth0 web app ID which is passed to jwt_decode_token method as audience
+    django_settings.KEY = 'REPLACE WITH AUTH0 CLIENT SECRET'
+
     # Whitelisted URL query parameters retrained in the pipeline session.
     # Params not in this whitelist will be silently dropped.
     django_settings.FIELDS_STORED_IN_SESSION = ['auth_entry', 'next']
